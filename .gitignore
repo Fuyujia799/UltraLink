@@ -7,3 +7,4 @@ dialog/
 reform_data.py
 filter_words.yml
 __pycache__/
+translate/Flan_dataset/record.json

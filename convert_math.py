@@ -8,9 +8,10 @@ from utils import RequestPool, quoter
 from concurrent.futures import as_completed
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--volume", type=int, default=200)
-parser.add_argument("--worker_num", type=int, default=200)
-parser.add_argument("--en_file", type=str)
+parser.add_argument("--volume", type=int, default=32500)
+parser.add_argument("--worker_num", type=int, default=300)
+parser.add_argument("--en_file", type=str, default="/home/fuyujia/data1/language_agnostic/sample_data/math/1000sample.jsonl")
+parser.add_argument("--filter_file", type=str, default="/home/fuyujia/data1/language_agnostic/filter_words.yml")
 parser.add_argument("--prompt_path" , type=str, default="./multi-math/math_prompt.yaml")
 parser.add_argument("--languages", type=str, default="ja")
 parser = parser.parse_args()
@@ -22,24 +23,38 @@ volume = parser.volume
 worker_num = parser.worker_num
 en_file = parser.en_file
 prompt_path = parser.prompt_path
-save_path = "./multi-math"
+save_path = "./sample_data/math"
 os.makedirs(save_path, exist_ok=True)
 
 
+with open(parser.filter_file, 'r') as file:
+    filter_words_dict = yaml.safe_load(file)
+    filter_words = filter_words_dict['en']
+
+def contains_filter_word(element, filter_words):
+    # 检查字典中的每个值是否包含任何过滤词
+    # for value in element.values():
+    keys_to_check = ["query", "response"]
+    for key in keys_to_check:
+        value = element[key]  
+        if isinstance(value, str) and any(word in value for word in filter_words):
+            return True
+    return False
 
 def reservoir_sampling(stream, k, had_done):
     reservoir = []
     count = 0
     for i, element in enumerate(stream):
-        if i in had_done:
+        if i in had_done or contains_filter_word(element, filter_words):
             continue
-        count = count + 1
+        count += 1
         if count <= k:
-            reservoir.append((i,element))
+            reservoir.append((i, element))
         else:
-            probability = k / (count + 1)
+            probability = k / float(count + 1)
             if random.random() < probability:
-                 reservoir[random.choice(range(k))] = (i,element)
+                reservoir[random.choice(range(k))] = (i, element)
+    return reservoir
     return reservoir
 
 if __name__ == "__main__":
@@ -98,7 +113,7 @@ if __name__ == "__main__":
                 # print(i)
                 r, j, t = data[future]
                 p = future.result()  
-                if len(p) == 0:
+                if p is None or len(p) == 0:
                     del data[future]
                     continue
                 # print(p)

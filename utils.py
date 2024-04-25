@@ -20,26 +20,26 @@ from tenacity import (
     RetryError
 )  # for exponential backoff
 
-check_language_type_model = fasttext.load_model("./model.bin")
+check_language_type_model = fasttext.load_model("/home/fuyujia/data1/model.bin")
 encoding = tiktoken.encoding_for_model('gpt-3.5-turbo')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--wiki_path', '-wi',type=str, default='/data/public/wangshuo/projects/wikipedia/')
-parser.add_argument('--question_path', '-qp', type=str, default='./data') #存问题
-parser.add_argument('--dialog_path', '-dp', type=str, default='./dialog') #存对话
+parser.add_argument('--question_path', '-qp', type=str, default='/home/fuyujia/data1/form_data/data/') #存问题
+parser.add_argument('--dialog_path', '-dp', type=str, default='/home/fuyujia/data1/form_data/dialog/') #存对话
 parser.add_argument("--save_interval", "-si", type=int, default=1, help="the interval of saving result")
-parser.add_argument("--doc_num", "-dn", type=int, default=1, help="the number of doc that will be processed, zero means all")
+parser.add_argument("--doc_num", "-dn", type=int, default=0, help="the number of doc that will be processed, zero means all")
 parser.add_argument("--split_len", "-sl", type=int, default=2000, help="the length of split text")
 parser.add_argument("--max_len", type=int, default=10000, help="the min length of text")
 parser.add_argument("--min_len", type=int, default=1000, help="the min length of text")
 parser.add_argument("--min_answer_len", "-mal", type=int, default=10, help="the min length of answer")
 parser.add_argument('--max_step_len', '-msl', type=int, default=10, help="the max length of random step that chooses the next file")
 parser.add_argument('--end_probability', '-ep', type=float,default=0.1, help="the probability of end the dialog, this probability will be doubled when the times of dialog is extended")
-parser.add_argument("--num_workers", "-nw", type=int, default=35, help="the number of workers")
+parser.add_argument("--num_workers", "-nw", type=int, default=23, help="the number of workers")
 parser.add_argument("--prompt_path", "-pp", type=str, default='./prompt.yaml', help="the config of prompt")
-parser.add_argument("--filter_path", "-sp", type=str, default=None, help="the filtered words")
+parser.add_argument("--filter_path", "-sp", type=str, default='./filter_words.yml', help="the filtered words")
 parser.add_argument("--generate_without_doc", "-gwd", type=bool, default=False, help="whether generate answer without doc, the default answer will still be generated from doc")
-parser.add_argument("--language", "-l", type=str, default='zh', help="the language of the doc")
+parser.add_argument("--language", "-l", type=str, default='de', help="the language of the doc")
 parser.add_argument("--add_mode", "-am", type=bool, default=False, help="whether add the result to the existed file")
 
 def get_XML(data_path):
@@ -119,6 +119,15 @@ def check_trunk(txt):
         return False
     else:
         return True
+
+def check_trunk_question(txt):
+#检查给定文本txt经过某种编码（通过encoding.encode方法）后的长度是否达到或超过了一个特定的阈值。
+#这种检查通常用于确定文本是否过长，以便于后续处理，例如在使用自然语言处理模型时避免输入长度超过模型限制。
+    txtlen = len(encoding.encode(txt))
+    if txtlen < 100: 
+        return False
+    else:
+        return True
     
 def check_doc(text, upper_bound=10000, lower_bound=1000, language_type = '__label__zho_Hans'): #'__label__zho_Hans'，这通常指中文简体。
 #用于检查给定的文本是否满足特定的条件，包括文本长度和语言类型。
@@ -137,7 +146,7 @@ def check_doc(text, upper_bound=10000, lower_bound=1000, language_type = '__labe
 def is_title_had_done(title, path, check_dir = None):
 #用于检查指定的标题是否已经存在于一个JSON文件中。这种功能通常用于避免重复处理或添加同一个标题的数据，确保数据集的唯一性和一致性。
     if check_dir != None:
-        other_path = path.replace('./data', check_dir)
+        other_path = path.replace('/home/fuyujia/data1/form_data/data/', check_dir)
     else:
         other_path = path
     json_list = get_JSON(other_path)
@@ -200,7 +209,7 @@ class RequestPool:
     def __init__(self, num_workers=10):
         self.executor = ThreadPoolExecutor(max_workers=num_workers)
         self.keys = [
-            os.environ.get("OPENAI_API_KEY"),
+            "sk-fn62YZPMSqUy6ioV9161C714Fe754885B8122600212d5cA6",
         ]
         self.keys_iter = itertools.cycle(self.keys)
         self.model = "gpt-3.5-turbo"
@@ -208,7 +217,7 @@ class RequestPool:
         for k in self.keys:
             client = OpenAI(
                 api_key=k,
-                base_url = os.environ.get("OPENAI_API_URL"),
+                base_url = 'https://yeysai.com/v1'
             )
             self.clients.append(client)
         self.clients_iter = itertools.cycle(self.clients)

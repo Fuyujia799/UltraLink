@@ -9,11 +9,13 @@ from utils import RequestPool, quoter
 from concurrent.futures import as_completed
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--volume", type=int, default=2500)
-parser.add_argument("--worker_num", type=int, default=500)
-parser.add_argument("--en_file", type=str)
+parser.add_argument("--volume", type=int, default=1050)
+parser.add_argument("--worker_num", type=int, default=260)
+parser.add_argument("--en_file", type=str, default="/home/fuyujia/data1/language_agnostic/sample_data/code/en-code_1k.jsonl")
+#parser.add_argument("--en_file", type=str, default="/home/fuyujia/data1/language_agnostic/multi-code/test.jsonl")
+parser.add_argument("--filter_file", type=str, default="/home/fuyujia/data1/language_agnostic/filter_words.yml")
 parser.add_argument("--prompt_path" , type=str, default="./multi-code/code_prompt.yaml")
-parser.add_argument("--languages", type=str, default="fr")
+parser.add_argument("--languages", type=str, default="ja")
 parser = parser.parse_args()
 # languages = ["ru", "es", "fr"]
 languages = parser.languages.split(",")
@@ -24,14 +26,28 @@ volume = parser.volume
 worker_num = parser.worker_num
 en_file = parser.en_file
 prompt_path = parser.prompt_path
-save_path = "multi-code/"
+save_path = "./sample_data/code"
 os.makedirs(save_path, exist_ok=True)
+
+with open(parser.filter_file, 'r') as file:
+    filter_words_dict = yaml.safe_load(file)
+    filter_words = filter_words_dict['en']
+
+def contains_filter_word(element, filter_words):
+    # 检查字典中的每个值是否包含任何过滤词
+    for value in element.values():
+    # keys_to_check = ["query", "response"]
+    # for key in keys_to_check:
+        #value = element[key]  
+        if isinstance(value, str) and any(word in value for word in filter_words):
+            return True
+    return False
 
 def reservoir_sampling(stream, k, had_done):
     reservoir = []
     count = 0
     for i, element in enumerate(stream):
-        if element["id"] in had_done:
+        if i in had_done or contains_filter_word(element, filter_words):
             continue
         count = count + 1
         if count <= k:
@@ -86,9 +102,13 @@ if __name__ == "__main__":
             r['problem'] = ""
             r['solution'] = ""
             if matcher.search(j['problem']) == None:
-                p = [prompt1, text + '\n' + j['problem'] + '\n' + translation]
+                #p = [prompt1, text + '\n' + j['problem'] + '\n' + translation]
+                p = ["", prompt1 + '\n' + text + '\n' + j['problem'] + '\n' + translation]
+
             else:
-                p = [prompt2, text + '\n' + j['problem'] + '\n' + translation]
+                #p = [prompt2, text + '\n' + j['problem'] + '\n' + translation]
+                p = ["", prompt2 + '\n' + text + '\n' + j['problem'] + '\n' + translation]
+
             print(f"start {j['id']}")
             # print(p[1])
             # print()
@@ -110,9 +130,10 @@ if __name__ == "__main__":
                 if t == 0:
                     r['problem'] = p
                     if matcher.search(j['solution']) == None:
-                        p = [prompt1, text + '\n' + j['solution'] + '\n' + translation]
+                        p = ["", prompt1 + '\n' + text + '\n' + j['solution'] + '\n' + translation]
+                        
                     else:
-                        p = [prompt2, text + '\n' + j['solution'] + '\n' + translation]
+                        p = ["", prompt2 + '\n' + text + '\n' + j['solution'] + '\n' + translation]
                     print(f"get query {r['id']}")
                     # print(p[1])
                     # print()
@@ -143,9 +164,13 @@ if __name__ == "__main__":
                     r['problem'] = ""
                     r['solution'] = ""
                     if matcher .search(j['problem']) == None:
-                        p = [prompt1, text + '\n' + j['problem'] + '\n' + translation]
+                        #p = [prompt1, text + '\n' + j['problem'] + '\n' + translation]
+                        p = ["", prompt1 + '\n' + text + '\n' + j['problem'] + '\n' + translation]
+
                     else:
-                        p = [prompt2, text + '\n' + j['problem'] + '\n' + translation]
+                        #p = [prompt2, text + '\n' + j['problem'] + '\n' + translation]
+                        p = ["", prompt2 + '\n' + text + '\n' + j['problem'] + '\n' + translation]
+                        
                     print(f"start {j['id']}")
                     # print(p[1])
                     # print()

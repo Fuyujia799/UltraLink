@@ -9,15 +9,16 @@ from utils import RequestPool, quoter
 from concurrent.futures import as_completed
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--volume", type=int, default=500)
+parser.add_argument("--volume", type=int, default=300)
 parser.add_argument("--worker_num", type=int, default=500)
-parser.add_argument("--en_file", type=str)
+parser.add_argument("--en_file", type=str, default="/data/public/wangshuo/UltraLink/generated_datas/eval_sets/multi-humaneval/en_humaneval.jsonl")
+parser.add_argument("--filter_file", type=str, default="/home/fuyujia/data1/language_agnostic/filter_words.yml")
 parser.add_argument("--prompt_path" , type=str, default="./humaneval/prompt.yaml")
-parser.add_argument("--languages", type=str, default="fr,es,ru")
+parser.add_argument("--languages", type=str, default="de")
 parser = parser.parse_args()
 # languages = ["ru", "es", "fr"]
 languages = parser.languages.split(",")
-matcher = re.compile(r"(```.*?```)", re.DOTALL)
+matcher = re.compile(r"(\"\"\".*?\"\"\")", re.DOTALL)
 
 languages = iter(languages)
 volume = parser.volume
@@ -27,11 +28,25 @@ prompt_path = parser.prompt_path
 save_path = "./humaneval/"
 os.makedirs(save_path, exist_ok=True)
 
+with open(parser.filter_file, 'r') as file:
+    filter_words_dict = yaml.safe_load(file)
+    filter_words = filter_words_dict['en']
+
+def contains_filter_word(element, filter_words):
+    # 检查字典中的每个值是否包含任何过滤词
+    for value in element.values():
+    # keys_to_check = ["query", "response"]
+    # for key in keys_to_check:
+        #value = element[key]  
+        if isinstance(value, str) and any(word in value for word in filter_words):
+            return True
+    return False
+
 def reservoir_sampling(stream, k, had_done):
     reservoir = []
     count = 0
     for i, element in enumerate(stream):
-        if element["task_id"] in had_done:
+        if i in had_done or contains_filter_word(element, filter_words):
             continue
         count = count + 1
         if count <= k:
@@ -49,9 +64,10 @@ if __name__ == "__main__":
         try:
             with open(out_file, "r") as f:
                 had_done = [json.loads(line) for line in f.readlines()]
-        except:
+        except FileNotFoundError:
             had_done = []
         had_done = [i['task_id'] for i in had_done]
+
         with open(en_file, "r") as f:
             en_data = [json.loads(line) for line in f.readlines()]
             en_data = iter(en_data)
@@ -67,11 +83,12 @@ if __name__ == "__main__":
                     text = d['text']
                     translation = d['translation']
                     break
+
         requestpool = RequestPool(worker_num)
         result = []
         futures = []
-        count = 0
         data = {}
+
         while len(futures) < min(worker_num, volume):
             try:
                 j = next(en_data)
@@ -85,65 +102,62 @@ if __name__ == "__main__":
             r['entry_point'] = j['entry_point']
             r['canonical_solution'] = j['canonical_solution']
             r['test'] = j['test']
-            p = ["", prompt1 + j['prompt'] + translation]
-            print(f"start {j['task_id']}")
-            # print(p[1])
-            # print()
-            future = requestpool.commit(p)
-            futures.append(future)  
-            data[future] = (r, j, 0)
             
-        while True:   
+            prompt_content_match = matcher.search(j['prompt'])
+            #print(prompt_content_match)
+            if prompt_content_match:
+                prompt_content = prompt_content_match.group(0)
+                #print(prompt_content)
+                prompt_to_translate = prompt1 + text + prompt_content + translation
+                #print(prompt_to_translate)
+                p = ["", prompt_to_translate]
+
+                print(f"start {j['task_id']}")
+                future = requestpool.commit(p)
+                futures.append(future)  
+                data[future] = (r, j, prompt_content, j['prompt'].replace(prompt_content, "{}"))
+            else:
+                continue  # Skip this item if no match is found
+        
+        while futures:
             new_futures = []
-            for i, future in enumerate(as_completed(futures)):
-                # print(i)
-                r, j, t = data[future]
-                p = future.result()  
-                if p == None or len(p) == 0 or p == "" :
-                    pass
-                else:
-                # print(p)
-                # print()
-                    r['prompt'] = p
+            for future in as_completed(futures):
+                r, j, original_content, prompt_template = data[future]
+                translated_content = future.result()  
+                #print(translated_content)
+                if translated_content is not None and translated_content:
+                    translated_prompt = prompt_template.format("\"\"\"" + translated_content + "\"\"\"")
+                    r['prompt'] = translated_prompt
                     result.append(r)
                     print(f"done {r['task_id']}")
                 del data[future]
                 try:
                     j = next(en_data)
                 except StopIteration:
-                    fail_count = 1
+                    fail_count += 1
                     continue
-                while j['id'] in had_done:
-                    try:
-                        j = next(en_data)
-                    except StopIteration:
-                        fail_count = 1
-                        break
-                r = {}
-                r['task_id'] = j['task_id']
-                r['prompt'] = ''
-                r['entry_point'] = j['entry_point']
-                r['canonical_solution'] = j['canonical_solution']
-                r['test'] = j['test']
-                p = [prompt1, text + '\n' + j['prompt'] + '\n' + translation]
-                print(f"start {j['task_id']}")
-                # print(p[1])
-                # print()
-                future = requestpool.commit(p)
-                new_futures.append(future)  
-                data[future] = (r, j, 0)
-            futures= new_futures
+                prompt_content_match = matcher.search(j['prompt'])
+                if prompt_content_match:
+                    prompt_content = prompt_content_match.group(0)
+                    prompt_to_translate = prompt1 + text + prompt_content + translation
+                    #print(prompt_to_translate)
+                    p = ["", prompt_to_translate]
+
+                    print(f"start {j['task_id']}")
+                    future = requestpool.commit(p)
+                    new_futures.append(future)  
+                    data[future] = (r, j, prompt_content, j['prompt'].replace(prompt_content, "{}"))
+            
+            futures = new_futures
                 
-            if len(result) >= 1:
+            if result:
                 with open(out_file, "a+") as f:
                     for r in result:
                         f.write(json.dumps(r, ensure_ascii=False) + "\n")
                     f.flush()
                     result = []
 
-            if fail_count == 1:
+            if fail_count > 0:
                 break
-            
-            
-            
-        
+
+    

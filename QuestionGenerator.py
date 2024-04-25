@@ -9,7 +9,7 @@ from tenacity import RetryError
 
 from utils import write_json, quoter, get_index, get_XML, \
     get_token_len, check_doc, is_title_had_done, get_JSON, \
-    convert_to_simple_chinese
+    convert_to_simple_chinese, check_trunk_question
 
 class QuestionGenerator:
     def __init__(self, args, request_pool) -> None:
@@ -136,15 +136,12 @@ class QuestionGenerator:
             cur_idx = len(get_JSON(name))
 
         for doc in data.iter('doc'):
-            # print(f"processing {doc.attrib['title']}, cur_idx: {cur_idx}")
             id = cur_idx
             title = doc.attrib['title']
             txt = doc.text
             if self.language == 'zh':
-                #print(len(txt))
                 txt = convert_to_simple_chinese(txt)
             if self.is_filter(txt):
-                #pdb.set_trace()
                 continue
             if check_doc(txt, self.max_len, self.min_len, language_type=self.prompt_config['language_type']) == False: 
                 continue
@@ -152,7 +149,6 @@ class QuestionGenerator:
                 continue
             if index > 0:
                 index -= 1
-                # print("have done skip")
                 continue
             txt_list = self.split_text(txt)
 
@@ -162,19 +158,36 @@ class QuestionGenerator:
             for txt in txt_list:
                 prompt = self.create_problem_prompt(txt)
                 futures.append(self.request_pool.commit(prompt))
-                
+            
             for future in futures:
-                try:
-                    result = future.result()
-                    result = result.split('\n')
-                    result = [r for r in result if len(r) != 0]
-                    # Check if result is not empty and language is 'zh' before converting
-                    if len(result) > 0 and self.language == 'zh': 
-                        #print(result[0])
-                        result = [convert_to_simple_chinese(result[0])]
-                    questions.append(copy.deepcopy(result))
-                except RetryError:
-                    questions.append([])
+                result_is_suitable = False
+                retry_count = 0  # 初始化重试计数器
+
+                while not result_is_suitable and retry_count < 3:
+                    try:
+                        result = future.result()
+                        if result is None:
+                            continue
+                        result = result.split('\n')
+                        result = [r for r in result if len(r) != 0]
+                        if len(result) > 0 and self.language == 'zh': 
+                            result = [convert_to_simple_chinese(r) for r in result]
+                        
+                        # Apply check_trunk_question to the first result (assuming there is one)
+                        if result and not check_trunk_question(result[0]):
+                            result_is_suitable = True
+                            questions.append(copy.deepcopy(result))
+                        else:
+                            # Retry generation if the check fails
+                            retry_count += 1  # 重试计数器递增
+                            if retry_count < 5:
+                                prompt = self.create_problem_prompt(txt)
+                                future = self.request_pool.commit(prompt)
+                            else:
+                                questions.append([])  # 如果重试次数达到限制，则添加空结果或采取其他行动
+
+                    except RetryError:
+                        questions.append([])  # 在发生RetryError时添加空结果
 
 
             data_json = {
@@ -186,14 +199,10 @@ class QuestionGenerator:
             json_list.append(data_json)
             count += 1
             cur_idx += 1
-            # with self.entry_lock:
-            #     self.entry_num -= 1
-            #     if self.entry_num <= 0:
-            #         break
             if count >= self.save_interval:
                 write_json(json_list, name)
                 count = 0
                 json_list = []
+
         write_json(json_list, name)
-        return
-    
+            

@@ -7,7 +7,7 @@ import pdb
 
 from utils import write_json, quoter, get_index, get_leaf_nodes,\
     get_JSON, RequestPool, check_trunk, ProbabilityIterator, get_token_len,\
-    convert_to_simple_chinese
+    convert_to_simple_chinese, check_trunk_question
 
 class DialogGenerator:
     def __init__(self, args, request_pool):
@@ -150,7 +150,19 @@ class DialogGenerator:
             return True
         else:
             return False
-        
+
+    def generate_question(self, prompt, txt, subdialog):
+        question_valid = False
+        attempts = 0
+        while not question_valid and attempts < 5:
+            question = self.request_pool.commit(prompt).result()
+            if not check_trunk_question(question):  #
+                question_valid = True
+            attempts += 1
+        if not question_valid:
+            return None  
+        return question 
+    
     def gene_dialog_from_txt(self, txt, questions):
             
         iterator = ProbabilityIterator(self.end_probability)
@@ -168,12 +180,14 @@ class DialogGenerator:
         
         answer = self.request_pool.commit(prompt).result()
         print("get answer")
-        if(check_trunk("".join(prompt) + answer)):
-            return subdialog
+        
+        if len(answer) == 0:  # 检查 answer 是否为空字符串
+            return subdialog  # 如果是空字符串，意味着被过滤掉了，直接返回
+        elif check_trunk("".join(prompt) + answer):
+            return subdialog  # 如果通过了 check_trunk 的检查，也返回 subdialog
         elif len(answer) < self.min_answer_len:
-            return subdialog
-        elif len(answer) == 0: # 被过滤掉了
-            return subdialog
+            return subdialog  # 如果 answer 的长度小于最小长度限制，也返回 subdialog
+
         
         subdialog.append(copy.deepcopy([question, answer]))
         
@@ -183,7 +197,7 @@ class DialogGenerator:
             if(check_trunk("".join(prompt))):
                 isContinue = False
                 continue
-            question = self.request_pool.commit(prompt).result()
+            question = self.generate_question(prompt, txt, subdialog)
             if(check_trunk("".join(prompt) + question)):
                 isContinue = False
                 continue
@@ -305,16 +319,21 @@ class DialogGenerator:
             futures = []
             for i in range(len(questions)):
                 futures.append(self.request_pool.submit(self.gene_dialog_from_txt, txt[i], questions[i]))
-                
+            
             for f in futures:
-                result = f.result()
-                if result:  # Ensure non-empty results are appended
-                    dialog['dialogs'].append(result)
-                    if self.is_generate_without_doc:
-                        questions_without_txt = [q for q, _ in result]
-                        dialog_without_doc_result = self.gene_dialog_without_txt(questions_without_txt)
-                        if dialog_without_doc_result:  # Check for non-empty results before appending
-                            dialog_without_doc['dialogs'].append(dialog_without_doc_result)
+                try:
+                    result = f.result()  # 等待任务完成并获取结果
+                    result = [(q, a) for q, a in result if q.strip()]  # Ensure non-empty question parts.
+                    if result:  # Ensure non-empty results are appended
+                        dialog['dialogs'].append(result)
+                        if self.is_generate_without_doc:
+                            questions_without_txt = [q for q, _ in result]
+                            dialog_without_doc_result = self.gene_dialog_without_txt(questions_without_txt)
+                            if dialog_without_doc_result:  # Check for non-empty results before appending
+                                dialog_without_doc['dialogs'].append(dialog_without_doc_result)
+                except Exception as e:
+                    print(f"处理 Future 时发生异常: {e}")
+
 
             if dialog['dialogs']:  # Only append if 'dialogs' is not empty
                 dialog_list.append(dialog)

@@ -152,3 +152,34 @@
     デイブは合計8＋6＋3＝17冊の本を買った。1冊6ドルなので、デイブはこれらの本に合計17×6＝102ドルを費やした。
     #### 102
     答えはこうだ：102
+- language: de
+  text: Originaltext：
+  translation: Rendering：
+  prompt1: >
+    Um den Wortstamm der folgenden Mathefrage ins Deutsche zu übersetzen, müssen Sie folgende Punkte *vorgeben*:
+    1.Behalten Sie die Zahlen, Symbole und LaTex-Escape-Zeichen im Text unverändert bei. LaTex-Escape-Zeichen sind Zeichenfolgen, die mit einem umgekehrten Schrägstrich beginnen, z. B. \frac{1}{2}, \cdot usw. Diese Zeichenfolgen sind in der Regel von '$'-Symbolen umgeben, z. B. '$x = \frac{1}{2}$'. Kopieren Sie diese Symbole einfach in den Übersetzungsprozess.
+    2.Übersetzen Sie den gesamten übrigen Text ins Deutsche, insbesondere die Personennamen, die in ihre gebräuchlichsten deutschen Entsprechungen übersetzt werden. Übersetzen Sie zum Beispiel "Joe" in "Joe".
+    3.Bei der Übersetzung ist es notwendig, die Genauigkeit und den strengen Gebrauch der Wörter zu gewährleisten, die mathematischen Wörter im Originaltext genau und professionell in die entsprechende mathematische Terminologie im Deutschen zu übersetzen und die Sprache so natürlich und fließend wie möglich zu gestalten.
+    4.Bei der Übersetzung muss sichergestellt werden, dass der Inhalt vollständig ist, die Bedeutung mit dem Originaltext übereinstimmt und keine Informationen hinzugefügt oder gelöscht werden dürfen.
+    typisches Beispiel：
+    Originaltext：
+    <text>Gracie and Joe are choosing numbers on the complex plane. Joe chooses the point $1+2i$. Gracie chooses $-1+i$. How far apart are Gracie and Joe's points?<\text>
+    Rendering：
+    Gracie und Joe wählen Zahlen in der komplexen Ebene. Joe wählt den Punkt $1+2i$. Gracie wählt $-1+i$. Wie weit liegen die Punkte von Gracie und Joe auseinander?Gracie und Joe wählen Zahlen in der komplexen Ebene. Joe wählt den Punkt $1+2i$. Gracie wählt $-1+i$. Wie weit liegen die Punkte von Gracie und Joe auseinander?
+  prompt2: >
+    Um den Wortstamm der folgenden Mathefrage ins Deutsche zu übersetzen, müssen Sie folgende Punkte *vorgeben*:
+    1.Behalten Sie die Zahlen, Symbole und LaTex-Escape-Zeichen im Text unverändert bei. LaTex-Escape-Zeichen sind Zeichenfolgen, die mit einem umgekehrten Schrägstrich beginnen, z. B. \frac{1}{2}, \cdot usw. Diese Zeichenfolgen sind in der Regel von '$'-Symbolen umgeben, z. B. '$x = \frac{1}{2}$'. Kopieren Sie diese Symbole einfach in den Übersetzungsprozess.
+    2.Übersetzen Sie den gesamten übrigen Text ins Deutsche, insbesondere die Personennamen, die in ihre gebräuchlichsten deutschen Entsprechungen übersetzt werden. Übersetzen Sie zum Beispiel "Joe" in "Joe".
+    3.Bei der Übersetzung ist es notwendig, die Genauigkeit und den strengen Gebrauch der Wörter zu gewährleisten, die mathematischen Wörter im Originaltext genau und professionell in die entsprechende mathematische Terminologie im Deutschen zu übersetzen und die Sprache so natürlich und fließend wie möglich zu gestalten.
+    4.Bei der Übersetzung muss sichergestellt werden, dass der Inhalt vollständig ist, die Bedeutung mit dem Originaltext übereinstimmt und keine Informationen hinzugefügt oder gelöscht werden dürfen.
+    typisches Beispiel：
+    Originaltext：
+    <text>Dave bought a total of 8 + 6 + 3 = 17 books.
+    Each book cost $6, so Dave spent a total of 17 x $6 = $102 on the books.
+    #### 102
+    The answer is: 102<\text>
+    Rendering：
+    Dave hat insgesamt 8 + 6 + 3 = 17 Bücher gekauft.
+    Jedes Buch kostet 6 $, also hat Dave insgesamt 17 x 6 $ = 102 $ für die Bücher ausgegeben.
+    #### 102
+    Die Antwort lautet: 102
