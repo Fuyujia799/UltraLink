@@ -1,8 +1,8 @@
 import json
 import os
 
-source_folder = '/home/fuyujia/Flan_dataset/Flan_dataset'
-target_folder = '/home/fuyujia/Flan_dataset/flan_jsonl'
+source_folder = './Flan_dataset/Flan_dataset'
+target_folder = './Flan_dataset/flan_jsonl'
 
 if not os.path.exists(target_folder):
     os.makedirs(target_folder)

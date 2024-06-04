@@ -136,7 +136,7 @@ def main(input_file_path, output_file_path):
 
 
 # 路径
-input_file_path = '/home/fuyujia/Flan_dataset/en_sample.jsonl'
+input_file_path = './Flan_dataset/en_sample.jsonl'
 output_file_path = 'zh_sample.jsonl'
 
 # 执行主函数

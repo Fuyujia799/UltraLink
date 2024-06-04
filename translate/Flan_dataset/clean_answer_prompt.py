@@ -19,8 +19,8 @@ def clean_jsonl_entries(input_file_path, output_file_path):
             outfile.write('\n')  # 为了保持jsonl格式，每个json对象后加换行符
 
 # 使用示例
-input_file_path = '/home/fuyujia/Flan_dataset/1000sample.jsonl'
-output_file_path = '/home/fuyujia/Flan_dataset/1000sample_clean.jsonl'
+input_file_path = './Flan_dataset/1000sample.jsonl'
+output_file_path = './Flan_dataset/1000sample_clean.jsonl'
 clean_jsonl_entries(input_file_path, output_file_path)
 
 

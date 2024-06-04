@@ -49,7 +49,7 @@ def extract_records(folder_path, output_file, record_file, num_records=1024*1024
         json.dump(extracted_records, f)
 
 # 调用函数
-folder_path = '/home/fuyujia/Flan_dataset/flan_filter'  # 输入文件夹路径
-output_file = '/home/fuyujia/Flan_dataset/flan_data_sample.jsonl'  # 输出文件路径
-record_file = '/home/fuyujia/Flan_dataset/record.json'  # 记录文件路径
+folder_path = './Flan_dataset/flan_filter'  # 输入文件夹路径
+output_file = './Flan_dataset/flan_data_sample.jsonl'  # 输出文件路径
+record_file = './Flan_dataset/record.json'  # 记录文件路径
 extract_records(folder_path, output_file, record_file)

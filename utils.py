@@ -20,13 +20,13 @@ from tenacity import (
     RetryError
 )  # for exponential backoff
 
-check_language_type_model = fasttext.load_model("/home/fuyujia/data1/model.bin")
+check_language_type_model = fasttext.load_model("./data1/model.bin")
 encoding = tiktoken.encoding_for_model('gpt-3.5-turbo')
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--wiki_path', '-wi',type=str, default='/data/public/wangshuo/projects/wikipedia/')
-parser.add_argument('--question_path', '-qp', type=str, default='/home/fuyujia/data1/form_data/data/') #存问题
-parser.add_argument('--dialog_path', '-dp', type=str, default='/home/fuyujia/data1/form_data/dialog/') #存对话
+parser.add_argument('--wiki_path', '-wi',type=str, default='')
+parser.add_argument('--question_path', '-qp', type=str, default='') #存问题
+parser.add_argument('--dialog_path', '-dp', type=str, default='') #存对话
 parser.add_argument("--save_interval", "-si", type=int, default=1, help="the interval of saving result")
 parser.add_argument("--doc_num", "-dn", type=int, default=0, help="the number of doc that will be processed, zero means all")
 parser.add_argument("--split_len", "-sl", type=int, default=2000, help="the length of split text")
@@ -146,7 +146,7 @@ def check_doc(text, upper_bound=10000, lower_bound=1000, language_type = '__labe
 def is_title_had_done(title, path, check_dir = None):
 #用于检查指定的标题是否已经存在于一个JSON文件中。这种功能通常用于避免重复处理或添加同一个标题的数据，确保数据集的唯一性和一致性。
     if check_dir != None:
-        other_path = path.replace('/home/fuyujia/data1/form_data/data/', check_dir)
+        other_path = path.replace('./data1/form_data/data/', check_dir)
     else:
         other_path = path
     json_list = get_JSON(other_path)
@@ -209,7 +209,7 @@ class RequestPool:
     def __init__(self, num_workers=10):
         self.executor = ThreadPoolExecutor(max_workers=num_workers)
         self.keys = [
-            "sk-fn62YZPMSqUy6ioV9161C714Fe754885B8122600212d5cA6",
+            "",
         ]
         self.keys_iter = itertools.cycle(self.keys)
         self.model = "gpt-3.5-turbo"
@@ -217,7 +217,7 @@ class RequestPool:
         for k in self.keys:
             client = OpenAI(
                 api_key=k,
-                base_url = 'https://yeysai.com/v1'
+                base_url = ''
             )
             self.clients.append(client)
         self.clients_iter = itertools.cycle(self.clients)

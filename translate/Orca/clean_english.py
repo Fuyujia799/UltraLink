@@ -22,8 +22,8 @@ def filter_jsonl(input_file, output_file):
         print(f"处理文件时发生错误：{e}")
 
 # 设置原始文件和目标文件的路径
-input_path = '/home/fuyujia/Orca/oo-labeled_correct.gpt4.sharegpt.jsonl'
-output_path = '/home/fuyujia/Orca/oo-labeled_correct.gpt4.sharegpt_no_en.jsonl'
+input_path = './Orca/oo-labeled_correct.gpt4.sharegpt.jsonl'
+output_path = './Orca/oo-labeled_correct.gpt4.sharegpt_no_en.jsonl'
 
 # 调用函数进行处理
 filter_jsonl(input_path, output_path)

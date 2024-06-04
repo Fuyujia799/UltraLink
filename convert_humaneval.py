@@ -9,16 +9,16 @@ from utils import RequestPool, quoter
 from concurrent.futures import as_completed
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--volume", type=int, default=300)
-parser.add_argument("--worker_num", type=int, default=500)
-parser.add_argument("--en_file", type=str, default="/data/public/wangshuo/UltraLink/generated_datas/eval_sets/multi-humaneval/en_humaneval.jsonl")
-parser.add_argument("--filter_file", type=str, default="/home/fuyujia/data1/language_agnostic/filter_words.yml")
+parser.add_argument("--volume", type=int, default=30)
+parser.add_argument("--worker_num", type=int, default=50)
+parser.add_argument("--en_file", type=str, default="")
+parser.add_argument("--filter_file", type=str, default="")
 parser.add_argument("--prompt_path" , type=str, default="./humaneval/prompt.yaml")
-parser.add_argument("--languages", type=str, default="de")
+parser.add_argument("--languages", type=str, default="ru")
 parser = parser.parse_args()
 # languages = ["ru", "es", "fr"]
 languages = parser.languages.split(",")
-matcher = re.compile(r"(\"\"\".*?\"\"\")", re.DOTALL)
+matcher = re.compile(r"([\"']{3}.*?[\"']{3})", re.DOTALL)
 
 languages = iter(languages)
 volume = parser.volume
@@ -33,13 +33,12 @@ with open(parser.filter_file, 'r') as file:
     filter_words = filter_words_dict['en']
 
 def contains_filter_word(element, filter_words):
-    # 检查字典中的每个值是否包含任何过滤词
     for value in element.values():
-    # keys_to_check = ["query", "response"]
-    # for key in keys_to_check:
-        #value = element[key]  
-        if isinstance(value, str) and any(word in value for word in filter_words):
-            return True
+        if isinstance(value, str):
+            for word in filter_words:
+                if word in value:
+                    print(f"Filtered out: {element} because of word: {word}")
+                    return True
     return False
 
 def reservoir_sampling(stream, k, had_done):
@@ -126,7 +125,16 @@ if __name__ == "__main__":
                 translated_content = future.result()  
                 #print(translated_content)
                 if translated_content is not None and translated_content:
-                    translated_prompt = prompt_template.format("\"\"\"" + translated_content + "\"\"\"")
+                    quote_type = original_content[0]  # 获取最初匹配的引号类型
+                    translated_prompt = prompt_template.format(f"{quote_type*3}" + translated_content + f"{quote_type*3}")
+                    # 替换四个及以上的引号为三个引号
+                    translated_prompt = re.sub(r'\"{4,}', '\"\"\"', translated_prompt)
+                    translated_prompt = re.sub(r'\'{4,}', '\'\'\'', translated_prompt)
+                    # 检查三个引号后是否有换行符，如果没有则添加
+                    translated_prompt = re.sub(r'\"\"\"(?!\n)', '\"\"\"\n    ', translated_prompt)
+                    translated_prompt = re.sub(r'\'\'\'(?!\n)', '\'\'\'\n    ', translated_prompt)
+                    translated_prompt = re.sub(r'(?m)^("""|\'\'\')\n(?![ ]{4})', r'"""\n    ', translated_prompt)
+                    
                     r['prompt'] = translated_prompt
                     result.append(r)
                     print(f"done {r['task_id']}")

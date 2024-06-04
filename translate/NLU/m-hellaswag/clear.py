@@ -1,7 +1,7 @@
 import json
 
-input_file = '/home/fuyujia/UltraEval/datasets/m-hellaswag/test_sample.jsonl'
-output_file = '/home/fuyujia/UltraEval/datasets/m-hellaswag/ja.jsonl'
+input_file = './UltraEval/datasets/m-hellaswag/test_sample.jsonl'
+output_file = './UltraEval/datasets/m-hellaswag/ja.jsonl'
 
 with open(input_file, 'r', encoding='utf-8') as f, open(output_file, 'w', encoding='utf-8') as fout:
     for line in f:

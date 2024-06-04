@@ -6,11 +6,11 @@ import re
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--filter_file', type=str, default='/home/fuyujia/data1/language_agnostic/filter_words.yml')
+parser.add_argument('--filter_file', type=str, default='./data1/language_agnostic/filter_words.yml')
 parser.add_argument("--worker_num", type=int, default=30)
-#parser.add_argument('--input_file', type=str, default='/home/fuyujia/UltraEval/datasets/m-mmlu/data/en.jsonl',)
-parser.add_argument('--input_file', type=str, default='/home/fuyujia/UltraEval/datasets/m-hellaswag/test1.jsonl',)
-parser.add_argument('--output_file', type=str, default='/home/fuyujia/UltraEval/datasets/m-hellaswag/test_sample.jsonl',)
+#parser.add_argument('--input_file', type=str, default='./UltraEval/datasets/m-mmlu/data/en.jsonl',)
+parser.add_argument('--input_file', type=str, default='./UltraEval/datasets/m-hellaswag/test1.jsonl',)
+parser.add_argument('--output_file', type=str, default='./UltraEval/datasets/m-hellaswag/test_sample.jsonl',)
 
 args = parser.parse_args()
 worker_num = args.worker_num

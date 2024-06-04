@@ -137,7 +137,7 @@ def main(input_file_path, output_file_path):
                 f_out.write(json.dumps(conv, ensure_ascii=False) + '\n')
 
                 
-input_file_path = '/home/fuyujia/Orca/sample.jsonl'
-output_file_path = '/home/fuyujia/Orca/sample_translate.jsonl'
+input_file_path = './Orca/sample.jsonl'
+output_file_path = './Orca/sample_translate.jsonl'
 
 main(input_file_path, output_file_path)
